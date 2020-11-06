@@ -1,0 +1,81 @@
+---
+title: "Capstone Project"
+author: "Matias Garcia Mazzaro"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output:  
+  pdf_document:
+    fig_crop: no
+    number_sections: yes
+    toc: yes
+    toc_depth: 3
+geometry:
+- top=25mm
+- bottom=25mm
+- left=25mm
+- right=25mm
+- heightrounded
+highlight-style: pygments
+linkcolor: blue
+mainfont: Arial
+fontsize: 12pt
+sansfont: Verdana
+documentclass: report
+urlcolor: blue
+---
+\pagebreak
+# The Project {-}
+
+The general idea of this project is to analice the crypto market and prices, i pretend detect diferents levels of correlation between peers of coins and understand the dinamic and flows of transactions, for this, is necessary divide the analysis in two or more parts, also i will construct the dataset making web scraping. Finally i will use Machine Learning for predict the prices.
+This work is the final project for the Data Science Professional certificate of HarvardX.
+
+#Introduction
+
+For this work, i will choice a specific plataform of trade, is normal diferents plataforms have diferents dinamics and flow of buy and sell trade. Instead, the transfer between diferents plataforms and traders conflude in a nivelation of the prices of the total market. So, it will give us a general idea of the market and specific results from the specific trade.
+
+Is necesary make a definition and clear how i will pose the analysis for the complexity of this work.
+
+For the analysis, before to start, we will calculate a long trend of prices for each crytocoin and the variation on short term and flows produced by trade. We can compare this last, like a mecanism of spring or nivelation. Then we will define if is necesary advance in analysis of volume of transactions. 
+
+For the long term trend data we will use historical data from another site who provide this daily information, this site is [Investing.com](https://www.investing.com/). For the sort variation we will use [Binance Exchange](https://www.binance.com/en)
+
+## Objetive
+
+The objetive is undestand and predict trought diferents methods of Machine Learning, the dinamics of prices of the first 10 cryptocoins.
+
+## Construct the dataset
+
+
+## Loading the packages and libraries
+
+```{r, warning=FALSE, message=FALSE}
+if(!require(tidyverse)) install.packages("tidyverse", repos = "http://cran.us.r-project.org")
+if(!require(caret)) install.packages("caret", repos = "http://cran.us.r-project.org")
+if(!require(data.table)) install.packages("data.table", repos = "http://cran.us.r-project.org")
+
+library(tidyverse)
+library(caret)
+library(data.table)
+library(rvest)
+```
+
+
+## Data Wrangling
+
+For start, 
+
+#Data exploration
+
+#Analysis
+
+section that explains the process and techniques used, including data cleaning, data exploration and visualization, any insights gained, and your modeling approach. At least two different models or algorithms must be used, with at least one being more advanced than linear or logistic regression for prediction problems.
+
+#Results
+
+A results section that presents the modeling results and discusses the model performance.
+
+#Conclusion
+
+A conclusion section that gives a brief summary of the report, its potential impact, its limitations, and future work.
+
+
+
