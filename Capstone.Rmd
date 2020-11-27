@@ -25,57 +25,598 @@ urlcolor: blue
 \pagebreak
 # The Project {-}
 
-The general idea of this project is to analice the crypto market and prices, i pretend detect diferents levels of correlation between peers of coins and understand the dinamic and flows of transactions, for this, is necessary divide the analysis in two or more parts, also i will construct the dataset making web scraping. Finally i will use Machine Learning for predict the prices.
-This work is the final project for the Data Science Professional certificate of HarvardX.
+The general idea of this project is to analice the crypto market and prices. I pretend, through
+the exploration, detect diferents levels of correlation between peers of coins and understand
+the dinamic and flows of transactions. For this, is necessary divide the analysis in two or
+more parts. Also i will construct the dataset making web scraping. Finally i will use Machine
+Learning to predict the prices. This work is the final project for the Data Science Professional
+certificate of HarvardX.
 
-#Introduction
+# Introduction
 
-For this work, i will choice a specific plataform of trade, is normal diferents plataforms have diferents dinamics and flow of buy and sell trade. Instead, the transfer between diferents plataforms and traders conflude in a nivelation of the prices of the total market. So, it will give us a general idea of the market and specific results from the specific trade.
+For this work, i will choice a specific plataform of trade, is normal diferents plataforms have diferents dinamics and flow of buy and sell trade. The transfer between diferents plataforms and traders conflude in a nivelation of the prices of the total market. So, it will give us a general idea of the market and specific trade.
 
-Is necesary make a definition and clear how i will pose the analysis for the complexity of this work.
+Is necesary make a definition and clear how i will pose the analysis of this work.
 
-For the analysis, before to start, we will calculate a long trend of prices for each crytocoin and the variation on short term and flows produced by trade. We can compare this last, like a mecanism of spring or nivelation. Then we will define if is necesary advance in analysis of volume of transactions. 
+Before to start, we will calculate a long term trend of prices for the principal cryto coin. The variation on short term and flows produced by trade in the short terms. Then we will define if is necesary advance in analysis of volume of transactions. 
 
-For the long term trend data we will use historical data from another site who provide this daily information, this site is [Investing.com](https://www.investing.com/). For the sort variation we will use [Binance Exchange](https://www.binance.com/en)
+For the long term trend data we will use historical specific data from a site who provide this daily information, this site is [Investing.com](https://www.investing.com/). For the short variation i will construct a data set minute by minute from [Coinmarketcap.com](https://coinmarketcap.com/).
+For train the Machine Learning algorithm, i will use a dataset minute by minute published in  [Kaggle](https://www.kaggle.com), is posible to have it pickin [here](https://www.kaggle.com/mczielinski/bitcoin-historical-data?select=bitstampUSD_1-min_data_2012-01-01_to_2020-09-14.csv), the information inside include data from 2012-01-01 to 2020-09-14.
+All datasets downloads automatically with the code, the historical data is in real time when you execute the code, and the short terms data set, which was working many hours is not posibble to include in this code, for solve it, i saved in my GitHub account. Also i include the code for construct it like a aditional information. This code is also in folder Capstone in GitHub with the name *constructing_dataset.R*.
 
 ## Objetive
 
-The objetive is undestand and predict trought diferents methods of Machine Learning, the dinamics of prices of the first 10 cryptocoins.
-
-## Construct the dataset
-
+The objetive is undestand and predict trought diferents methods of Machine Learning, the dinamics of prices of the first cryptocoins.
+The general estrategy was planed, but the specific knowing will be apear in the process of exploration.
 
 ## Loading the packages and libraries
 
 ```{r, warning=FALSE, message=FALSE}
 if(!require(tidyverse)) install.packages("tidyverse", repos = "http://cran.us.r-project.org")
 if(!require(caret)) install.packages("caret", repos = "http://cran.us.r-project.org")
-if(!require(data.table)) install.packages("data.table", repos = "http://cran.us.r-project.org")
+if(!require(rvest)) install.packages("rvest", repos = "http://cran.us.r-project.org")
+if(!require(dplyr)) install.packages("dplyr", repos = "http://cran.us.r-project.org")
+if(!require(lubridate)) install.packages("lubridate", repos = "http://cran.us.r-project.org")
+if(!require(stringr)) install.packages("stringr", repos = "http://cran.us.r-project.org")
+if(!require(ggplot2)) install.packages("ggplot2", repos = "http://cran.us.r-project.org")
+if(!require(TTR)) install.packages("TTR", repos = "http://cran.us.r-project.org")
+if(!require(zoo)) install.packages("zoo", repos = "http://cran.us.r-project.org")
+if(!require(knitr)) install.packages("knitr", repos = "http://cran.us.r-project.org")
 
 library(tidyverse)
 library(caret)
 library(data.table)
 library(rvest)
+library(dplyr)
+library(lubridate)
+library(stringr)
+library(ggplot2)
+library(TTR)
+library(zoo)
+library(knitr)
+
+```
+
+## Construct the dataset minute by minute
+
+In this section i will explaind and show how i construct the code for scrap the minute by minute dataset, and i give a example of one or two web scraping captures, but the utility of that is making work it many hours. This chapter is a addicional informatión.
+
+### Read the html webpage
+
+We read the webpage and continuosly we save the date in the moment exactly after.
+
+```{r, warning=FALSE, message=FALSE}
+coinmarket <- read_html("https://coinmarketcap.com/")
+date <- now()
+class(coinmarket)
+```
+
+We identify the CCS selector for take the Name of coin, price, and volume.
+With CSS selectors we save the price of the first 100 cryptocoins, then, we take out the simbol "$", the "," and others words.
+Continuosly we order the data in a martix and convert it in a tibble.
+Then we add the data of scraping in the rows.
+
+```{r, warning=FALSE, message=FALSE}
+market <- html_nodes(coinmarket, ".iJjGCS , .hNpJqV , td .kDEzev , .price___3rj7O .cmc-link , .coin-item-symbol")
+length(market)
+market_text <- html_text(market)
+market_text <- market_text %>% str_replace_all("[$]", "") #we take out the symbol "$"
+market_text <- market_text %>% str_replace_all(",", "") # we take out the ","
+market_text <- market_text %>% str_replace_all("\\s[A-Z]*", "") # we take out the name of V6
+market_text
+market_data <- matrix(market_text, 100, 6, byrow = TRUE)
+market_data <- as_tibble(market_data)
+market_data <- market_data %>% mutate(date = date)
+head(market_data) %>% knitr::kable()
+```
+
+Then we can transform the class of the variables for procces and add the name in the columns.
+
+```{r,  warning=FALSE, message=FALSE}
+market_data$V3 <- as.numeric(market_data$V3)
+market_data$V4 <- as.numeric(market_data$V4)       
+market_data$V5 <- as.numeric(market_data$V5)
+market_data$V6 <- as.numeric(market_data$V6)
+colnames(market_data) <- c("Name", "Key", "Price", "Market_Cap", "Vol24hs", "Circulating", "Date")
+head(market_data) %>% knitr::kable()
+```
+
+### Others details
+
+We need to construct others details for ensamble all the information in one complete dataset.
+It can be like this:
+
+**market_data1 <- full_join(market_data, market_data1)**
+**market_data1**
+
+Another thing is how set the timer for sleep the time we need. It is (in senconds) a example for sleep 1 minute;
+
+**Sys.sleep(60)**
+
+### The Ensemble
+
+We ensemble all in a function of **steps (m)** we want and **seconds (s)** we want to sleep the system between scrap and scrap. 
+
+```{r, warning=FALSE, message=FALSE}
+datasetmakingfor <- function(m, s){
+  i <- 1
+  for(i in 1:m){
+    Sys.sleep(s)
+    coinmarket <- read_html("https://coinmarketcap.com/")
+    date <- now()
+    market <- html_nodes(coinmarket, ".iJjGCS , .hNpJqV , td .kDEzev , .price___3rj7O .cmc-link , .coin-item-symbol")
+    market_text <- html_text(market)
+    market_text <- market_text %>% str_replace_all("[$]", "") #we take out the symbol "$"
+    market_text <- market_text %>% str_replace_all(",", "") # we take out the ","
+    market_text <- market_text %>% str_replace_all("\\s[A-Z]*", "") # we take out the name of V6
+    market_data <- matrix(market_text, 100, 6, byrow = TRUE)
+    market_data <- as_tibble(market_data)
+    market_data <- market_data %>% mutate(date = date)
+    market_data$V3 <- as.numeric(market_data$V3)
+    market_data$V4 <- as.numeric(market_data$V4)       
+    market_data$V5 <- as.numeric(market_data$V5)
+    market_data$V6 <- as.numeric(market_data$V6)
+    colnames(market_data) <- c("Name", "Key", "Price", "Market_Cap", "Vol24hs", "Circulating", "Date")
+    if(i == 1){market_data1 <- market_data}
+    else market_data1 <- full_join(market_data, market_data1)
+    i+1
+    print((i/m)*100)}
+  market_data1
+}
+```
+
+In the function we incorpore too a **If - else** to jump in the first loop, because is not posible to join a matrix with another that at the moment don't exist.
+Also we add a count _print((i/m)*100)_ for know the percentage complete of the scraping.
+Like we say before, we run this function only with 4 steps and 5 seconds, but the objetive is to get a dataset of 24 hours.
+
+Only for a example;
+
+```{r,  warning=FALSE, message=FALSE}
+dataset <- datasetmakingfor(4, 5) #4 step, sleep for 5 seconds
+nrow(dataset)
+head(dataset) %>% knitr::kable()
+```
+
+For be posible the analysis I saved a dataset of 24 hours in my GitHub account, it will download automatically for the next analysis. The name is **dset.csv**
+
+# Analysis
+
+In this section i will explains the process and techniques used, including data cleaning, data exploration and visualization, any insights gained, and your modeling approach. At least two different models or algorithms must be used, with at least one being more advanced than linear or logistic regression for prediction problems.
+
+## Data exploration
+
+```{r, warning=FALSE, message=FALSE}
+url <- "https://raw.githubusercontent.com/Avantas/Capstone/main/dset.csv"
+dset <- read_csv(url)
+```
+
+If you want to have a local copy **download.file(url, "dataset.csv")**
+
+```{r, warning=FALSE, message=FALSE}
+head(dset) %>% knitr::kable()
+```
+
+We need to take out the column X1
+
+```{r, warning=FALSE, message=FALSE}
+dset$X1 <- NULL
+```
+
+```{r, warning=FALSE, message=FALSE}
+dset %>% group_by(Key) %>% filter(Vol24hs >= 10^9) %>% # we filter for Crypto who market cap is more than 100 millons
+  ggplot(aes(Key, Price)) + geom_boxplot() + 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, size = 7)) +
+  scale_y_log10() +
+  xlab("Crypto Coin") + 
+  ylab("Market price (Log 10 scale)") +
+  ggtitle("Variation in prices in the dataset period")
+```
+
+```{r, warning=FALSE, message=FALSE}
+head(dset) %>% knitr::kable()
+```
+
+We observe the price fluctuations between diferents coins over the date 
+
+```{r, warning=FALSE, message=FALSE}
+dset %>% group_by(Key) %>% filter(Vol24hs >= 10^9) %>%
+  ggplot(aes(Date, Price, color = Key)) + geom_line() + scale_y_log10() +
+  xlab("Date") + ylab("Price of Coin (Log10 scale)") + ggtitle("Variation of Prices in the time") 
+```
+
+For observe the weight of the prices moviment, we create a relation between price and volumen
+
+```{r, warning=FALSE, message=FALSE}
+dset %>% mutate(relation_vol_price = Vol24hs/Price) %>% 
+  group_by(Key) %>% filter(Vol24hs >= 10^9) %>% 
+  ggplot(aes(Date, relation_vol_price, color = Key)) + geom_line() + scale_y_log10() +
+  xlab("Date") + ylab("Price of Coin (Log10 scale") + ggtitle("Relation Price-Volumen in the time")
+```
+
+In the visutalization, is posible to observe when all prices go up (by buy operations) or when some trader are moving between cryptocoins, the main usefull thing is to detect negative correlations
+In automatical small operations
+
+We tray again with all cryptocoins (we take out the filter and set for better visualization)
+
+```{r, warning=FALSE, message=FALSE}
+dset %>% mutate(relation_vol_price = Vol24hs/Price) %>% 
+  group_by(Key) %>% 
+  ggplot(aes(Date, relation_vol_price, color = Key)) + 
+  geom_line(show.legend = FALSE, position = "stack", size = 1) + 
+  scale_y_log10() +
+  xlab("Date") + 
+  ylab("Relation Volumen - Price of Coin (Log10 scale)") +
+  ggtitle("Relation prices-volumen in the time")
+```
+
+we can see two big groups of coins moving together.
+
+
+We try again but filtered for sd.
+
+```{r, warning=FALSE, message=FALSE}
+dset %>% mutate(sd = sd(Vol24hs/Price)) %>% 
+  filter (sd > 50)%>% 
+  group_by(Key) %>% 
+  ggplot(aes(Date, sd, color = Key)) + 
+  geom_line(show.legend = FALSE, position = "stack", size = 1) + 
+  scale_y_log10() +
+  xlab("Date") + 
+  ylab("SD Volumen - Price of Coin (Log10 scale)") +
+  ggtitle("Standard Deviation of prices-volumen in the time")
+```
+
+we observe al line, like a new coin that we have data for a short peroid of time, we investigate whats is it
+
+```{r, warning=FALSE, message=FALSE}
+dset %>% group_by(Key, Vol24hs) %>% summarize(Price = mean(Price)) %>% arrange(desc(Vol24hs)) %>% 
+  head() %>% knitr::kable()
+```
+
+```{r, warning=FALSE, message=FALSE}
+dset %>% group_by(Key) %>% mutate(dif = (mean(Price)-Price)*10) %>% filter(Key %in% c("BTC", "LTC", "ETH"))%>% ggplot(aes(Date, dif, color = Key)) + geom_line() + scale_y_log10() + ylab("Variation of the mean Prices (Log10 scale)") + ggtitle("Moviment of prices from the mean")
+
+dset %>% group_by(Key) %>% mutate(dif = (mean(Price)-Price)*10) %>% filter(Key %in% c("BTC", "LTC", "ETH"))%>% ggplot(aes(Date, dif, color = Key)) + geom_line() + ylab("Variation of prices from the mean") + ggtitle("Change in the prices from the mean")
+
+dset %>% group_by(Key) %>%  mutate(dif = (mean(Price)-Price)*10) %>% ggplot(aes(Date, dif, color = Key)) + geom_line(show.legend =  FALSE) + scale_y_log10()  + ylab("Variation of prices from the mean (Log10 scale") + 
+  ggtitle("Variation of prices in all cryptocoin")
+
+dset %>% group_by(Key) %>%  mutate(dif = (mean(Price)-Price)*10) %>% head() %>% knitr::kable()
+
+dset %>% group_by(Key) %>% mutate(dif = (mean(Price)-Price)*10) %>% filter(Key %in% c("BTC", "LTC", "ETH", "USDT", "XRP", "LINK", "BCH", "BNB", "DOT", "ADA"))%>% ggplot(aes(Date, dif, color = Key)) + geom_line() + scale_y_log10() + 
+  ylab("Variation of prices from the mean") + ggtitle("Top 10 by volumen variation prices")
+```
+
+```{r, warning=FALSE, message=FALSE}
+top20 <- dset %>% group_by(Key) %>% summarize(sum = sum(Market_Cap)) %>% arrange(desc(sum))
+top20 <- top20 %>% top_n(20)
+top20 %>% knitr::kable()
+```
+
+```{r, warning=FALSE, message=FALSE}
+dset %>% group_by(Key) %>% mutate(dif = (mean(Price)-Price)*10) %>% filter(Key %in% top20$Key) %>% ggplot(aes(Date, dif, color = Key)) + geom_line() + scale_y_log10() + ylab("Variation of prices from the mean (Log10 scale)") + ggtitle("Variation in the prices from mean, Top 20")
+```
+
+We will see the diference of price one by one, only for the top 10
+
+```{r, warning=FALSE, message=FALSE, echo = FALSE}
+
+dset %>% group_by(Key) %>% mutate(dif = (mean(Price)-Price)*10) %>% filter(Key %in% top20$Key[1]) %>% ggplot(aes(Date, dif, color = Key)) + geom_line() + scale_y_log10() + ylab("Variation in prices from mean (Log10 scale)") + ggtitle("Variation in prices from mean for BTC")
+dset %>% group_by(Key) %>% mutate(dif = (mean(Price)-Price)*10) %>% filter(Key %in% top20$Key[2]) %>% ggplot(aes(Date, dif, color = Key)) + geom_line() + scale_y_log10() + ylab("Variation in prices from mean (Log10 scale)") + ggtitle("Variation in prices from mean for ETH")
+dset %>% group_by(Key) %>% mutate(dif = (mean(Price)-Price)*10) %>% filter(Key %in% top20$Key[3]) %>% ggplot(aes(Date, dif, color = Key)) + geom_line() + scale_y_log10() + ylab("Variation in prices from mean (Log10 scale)") + ggtitle("Variation in prices from mean for USDT")
+dset %>% group_by(Key) %>% mutate(dif = (mean(Price)-Price)*10) %>% filter(Key %in% top20$Key[4]) %>% ggplot(aes(Date, dif, color = Key)) + geom_line() + scale_y_log10() + ylab("Variation in prices from mean (Log10 scale)") + ggtitle("Variation in prices from mean for XRP")
+dset %>% group_by(Key) %>% mutate(dif = (mean(Price)-Price)*10) %>% filter(Key %in% top20$Key[5]) %>% ggplot(aes(Date, dif, color = Key)) + geom_line() + scale_y_log10() + ylab("Variation in prices from mean (Log10 scale)") + ggtitle("Variation in prices from mean for LINK")
+dset %>% group_by(Key) %>% mutate(dif = (mean(Price)-Price)*10) %>% filter(Key %in% top20$Key[6]) %>% ggplot(aes(Date, dif, color = Key)) + geom_line() + scale_y_log10() + ylab("Variation in prices from mean (Log10 scale)") + ggtitle("Variation in prices from mean for BCH")
+dset %>% group_by(Key) %>% mutate(dif = (mean(Price)-Price)*10) %>% filter(Key %in% top20$Key[7]) %>% ggplot(aes(Date, dif, color = Key)) + geom_line() + scale_y_log10() + ylab("Variation in prices from mean (Log10 scale)") + ggtitle("Variation in prices from mean for BNB")
+dset %>% group_by(Key) %>% mutate(dif = (mean(Price)-Price)*10) %>% filter(Key %in% top20$Key[8]) %>% ggplot(aes(Date, dif, color = Key)) + geom_line() + scale_y_log10() + ylab("Variation in prices from mean (Log10 scale)") + ggtitle("Variation in prices from mean for LTC")
+dset %>% group_by(Key) %>% mutate(dif = (mean(Price)-Price)*10) %>% filter(Key %in% top20$Key[9]) %>% ggplot(aes(Date, dif, color = Key)) + geom_line() + scale_y_log10() + ylab("Variation in prices from mean (Log10 scale)") + ggtitle("Variation in prices from mean for DOT")
+dset %>% group_by(Key) %>% mutate(dif = (mean(Price)-Price)*10) %>% filter(Key %in% top20$Key[10]) %>% ggplot(aes(Date, dif, color = Key)) + geom_line() + scale_y_log10() + ylab("Variation in prices from mean (Log10 scale)") + ggtitle("Variation in prices from mean for ADA")
+```
+
+Now, we observe the real price one by one for the top 10
+
+```{r, warning=FALSE, message=FALSE, echo = FALSE}
+dset %>% group_by(Key) %>% filter(Key == top20$Key[1]) %>% ggplot(aes(Date, Price, col= Key)) + geom_line() + ylab("Price") + ggtitle("Prices variation for BTC")
+dset %>% group_by(Key) %>% filter(Key == top20$Key[2]) %>% ggplot(aes(Date, Price, col= Key)) + geom_line() + ylab("Price") + ggtitle("Prices variation for ETH")
+dset %>% group_by(Key) %>% filter(Key == top20$Key[4]) %>% ggplot(aes(Date, Price, col= Key)) + geom_line() + ylab("Price") + ggtitle("Prices variation for XRP")
+dset %>% group_by(Key) %>% filter(Key == top20$Key[5]) %>% ggplot(aes(Date, Price, col= Key)) + geom_line() + ylab("Price") + ggtitle("Prices variation for LINK")
+dset %>% group_by(Key) %>% filter(Key == top20$Key[6]) %>% ggplot(aes(Date, Price, col= Key)) + geom_line() + ylab("Price") + ggtitle("Prices variation for BCH")
+dset %>% group_by(Key) %>% filter(Key == top20$Key[7]) %>% ggplot(aes(Date, Price, col= Key)) + geom_line() + ylab("Price") + ggtitle("Prices variation for BNB")
+dset %>% group_by(Key) %>% filter(Key == top20$Key[8]) %>% ggplot(aes(Date, Price, col= Key)) + geom_line() + ylab("Price") + ggtitle("Prices variation for LTC")
+dset %>% group_by(Key) %>% filter(Key == top20$Key[9]) %>% ggplot(aes(Date, Price, col= Key)) + geom_line() + ylab("Price") + ggtitle("Prices variation for DOT")
+dset %>% group_by(Key) %>% filter(Key == top20$Key[10]) %>% ggplot(aes(Date, Price, col= Key)) + geom_line() + ylab("Price") + ggtitle("Prices variation for ADA")
+```
+
+We take out the graphic of USDT because is not variation.
+
+```{r, warning=FALSE, message=FALSE}
+dset %>% group_by(Key) %>% filter(Key == top20$Key[1]) %>% ggplot(aes(Date, Price, col= Key)) + geom_line() + geom_smooth() + ggtitle("Smoothing BTC Price")
+```
+
+Looking the variation and volumen of the prices in the top 10 crypto coins, we will concentrate the esforces to predict the price of the bitcoin, **but** we need also a pair of other more stable coin for trade in a future.
+
+## Historical BTC data
+
+For the historical data of BTC price i upload also a csv file in GitHub, this data was provided for Investing.com
+
+```{r, warning=FALSE, message=FALSE}
+url <- "https://raw.githubusercontent.com/Avantas/Capstone/main/BTC_USD%20Binance%20Historical%20Data%20(2).csv"
+historical <- read_csv(url)
+historical$Date <- mdy(historical$Date)
+historical %>% ggplot(aes(Date, Price)) + geom_line() + ggtitle("BTC Price from 2018 to 2020")
+```
+
+## Rolling mean
+
+We made the function of movil mean and set it in 21 days (Its knowed that there are patterns of moviments in 21 days)
+
+```{r, warning=FALSE, message=FALSE}
+rollingmean <- rollmedian(historical$Price, 21)
+head(rollingmean) %>% knitr::kable()
+rollingmean[1153:1172] <- 0
+historical <- historical %>% mutate(ma = rollingmean)
+historical %>% ggplot(aes(Date, Price)) + geom_line() + geom_line(aes(Date, ma), col = "green")  + ggtitle("Price of BTC with Rolling mean (21 days)")
+historical %>% filter(Date >= "2020-01-01") %>% ggplot(aes(Date, Price)) + geom_line() + geom_line(aes(Date, ma), col = "green") + ggtitle("Price of BTC with Rolling mean (21 days) - zoom")
+```
+
+## KDJ Trend Indicator
+
+The KDJ consists of 3 lines (K, D and J - hence the name of the indicator) and 2 levels. The K and the D are the same lines that you see when using the Stochastic Oscillator. The line J, on the other hand, represents the divergence of the value D from the K. The convergence of these lines is a sign of emerging trading opportunities.
+As with the Stochastic Oscillator, the overbought and oversold levels correspond to the times when the trend is about to reverse. By default, these levels were obtained at 20% and 80%. Both can be adjusted for additional sensitivity / fewer false alerts.
+
+```{r, warning=FALSE, message=FALSE}
+KDJ <- historical %>% select(High, Low, Price)
+KDJ <- KDJ %>% stoch()
+head(KDJ) %>% knitr::kable()
+```
+
+```{r, warning=FALSE, message=FALSE}
+KDJ_matrix_K <- matrix(KDJ[-1:-13,1],(839+333-13),1)
+KDJ_matrix_D <- matrix(KDJ[-1:-15,2],(839+333-15),1)
+KDJ_matrix_J <- matrix(KDJ[-1:-17,3],(839+333-17),1)
+KDJ_matrix_D[1158:1159] <- 0 
+KDJ_matrix_J[1156:1159] <- 0
+KDJ_matrix_K[1160:1172] <- 0 
+KDJ_matrix_J[1160:1172] <- 0
+KDJ_matrix_D[1160:1172] <- 0 
+KDJ_matrix <- matrix(c(KDJ_matrix_K, KDJ_matrix_D, KDJ_matrix_J), 1172,3)
+head(KDJ_matrix) %>% knitr::kable()
+```
+
+```{r, warning=FALSE, message=FALSE}
+historical %>% mutate(K = KDJ_matrix[,1] , D = KDJ_matrix[,2], J = KDJ_matrix[,3]) %>% 
+  filter(Date >= "2020-07-01") %>% ggplot(aes(Date, Price)) + geom_line() +
+  geom_line(aes(Date, K*15000), col = "blue") + 
+  geom_line(aes(Date, D*15000), col = "yellow") + 
+  geom_line(aes(Date, J*15000), col = "black") + 
+  ggtitle("BTC Price and KDJ indicator")
+```
+
+```{r, warning=FALSE, message=FALSE}
+historical  %>% mutate(day = weekdays(historical$Date)) %>% 
+  filter(Date >= "2020-01-01") %>% group_by(day) %>% 
+  ggplot(aes(Date, Price)) + geom_boxplot() + 
+  facet_grid(. ~ day) + 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, size = 7)) +
+  ggtitle("Distribution of BTC prices by day")
+```
+
+## We explore the dataset from kaggle
+
+We can acces to a dataset of kaggle minute by minute, but, this data set have information only until 14 th of september this year. Indeed, is interesting for the future analysis or train the algorithm in the short term.
+
+```{r, warning=FALSE, message=FALSE}
+url1 <- "https://www.kaggle.com/mczielinski/bitcoin-historical-data?select=bitstampUSD_1-min_data_2012-01-01_to_2020-09-14.csv"
+ds_k <- read_csv(url1)
+```
+
+```{r, warning=FALSE, message=FALSE}
+ds_kaggle <- read_csv("bitstampUSD_1min_data_20120101_to_20200914.csv")
+head(ds_kaggle) %>% knitr::kable()
+```
+
+```{r, warning=FALSE, message=FALSE}
+ds_kaggle$Timestamp <- as.POSIXct(ds_kaggle$Timestamp, origin="1970-01-01")
+head(ds_kaggle)
+```
+
+```{r, warning=FALSE, message=FALSE}
+min(ds_kaggle$Timestamp)
+max(ds_kaggle$Timestamp)
+```
+
+### Log Scale
+
+The Stock and Flow model is always discused by diferents traders. 
+
+```{r, warning=FALSE, message=FALSE}
+ds_kaggle %>% ggplot(aes(Timestamp, Close)) + geom_line() + scale_y_log10() +
+  ylab("Price (Log10 scale)") + ggtitle("BTC Price 2012 - 2020 (Log Scale)")
+```
+
+## Machine Learning Prediction
+
+```{r, warning=FALSE, message=FALSE}
+reduced_kaggle <- ds_kaggle %>% filter(Timestamp >= "2018-01-01")
+```
+
+We use the glm method
+
+```{r, warning=FALSE, message=FALSE}
+test_set <- reduced_kaggle %>% filter(Timestamp >= "2020-06-01", !is.na(Close))
+train_set <- reduced_kaggle %>% filter(Timestamp < "2020-06-01", !is.na(Close))
+
+test_set %>% ggplot(aes(Timestamp, Close)) + geom_line() + 
+  ylab("Price") + xlab("Date") + ggtitle("BTC Price test set")
+
+train_glm <- train(Close ~ ., method = "glm", data = train_set)
+
+y_hat_glm <- predict(train_glm, test_set, type = "raw")
+
+test_set %>% mutate(y_hat_glm = y_hat_glm) %>% filter(Timestamp >= "2020-09-01") %>% ggplot(aes(Timestamp, Close)) + geom_line() + geom_line(aes(Timestamp, y_hat_glm),col = "green") + ylab("Price") + xlab("Date") + ggtitle("BTC price and prediction (Green)")
 ```
 
 
-## Data Wrangling
+The correlation between the Price of close with Open Price High and Low is near to perfect, but the problem is we will have not all this information. It is making a prediction by row and by minute.
 
-For start, 
+We try to predict the high and low values with the Open Price.
 
-#Data exploration
+```{r, warning=FALSE, message=FALSE}
+train_glm_high <- train(High ~ Open, method = "glm", data = train_set)
+train_glm_low <- train(Low ~ Open, method = "glm", data = train_set)
+y_hat_glm_high <- predict(train_glm_high, test_set, type = "raw")
+y_hat_glm_low <- predict(train_glm_low, test_set, type = "raw")
+test_set %>% mutate(y_hat_glm_high = y_hat_glm_high, y_hat_glm_low = y_hat_glm_low) %>% 
+  filter(Timestamp >= "2020-09-13 18:00") %>% ggplot(aes(Timestamp, High)) + 
+  geom_line() + 
+  geom_line(aes(Timestamp, y_hat_glm_high),col = "green") + 
+  geom_line(aes(Timestamp, y_hat_glm_low),col = "red") + 
+  geom_line(aes(Timestamp, Low), col ="black") + ggtitle("High and Low Prices prediction for BTC") + xlab("Date") + ylab("Price")
+```
 
-#Analysis
+```{r, warning=FALSE, message=FALSE}
+test_set %>% filter(Timestamp >= "2020-09-13 18:00") %>% head() %>% knitr::kable()
+```
 
-section that explains the process and techniques used, including data cleaning, data exploration and visualization, any insights gained, and your modeling approach. At least two different models or algorithms must be used, with at least one being more advanced than linear or logistic regression for prediction problems.
+They are not good predictors.
 
-#Results
+```{r, warning=FALSE, message=FALSE}
+test_set %>% head() %>% knitr::kable()
+```
 
-A results section that presents the modeling results and discusses the model performance.
+## Machine learning dataset future
 
-#Conclusion
+We need to add the price for tomorrow in the same row with the predictors, so, we can train the algorithm for the price of tomorrow.
 
-A conclusion section that gives a brief summary of the report, its potential impact, its limitations, and future work.
+```{r, warning=FALSE, message=FALSE}
+Price <- historical$Price
+histor <- historical %>% mutate(tomorrow = NA)
+histor$tomorrow[2:1172] <- Price[1:1171]
+```
+
+Future price, tomorrow
+
+```{r, warning=FALSE, message=FALSE}
+histor %>% head() %>% knitr::kable()
+```
+
+### Glm method
+
+We predict 
+
+```{r, warning=FALSE, message=FALSE}
+test_set_histor <- histor %>% filter(Date >= "2020-06-01", !is.na(tomorrow)) %>% 
+  select(Date, Price, Open, High, Low, tomorrow)
+train_set_histor <- histor %>% filter(Date < "2020-06-01", !is.na(tomorrow)) %>% 
+  select(Date, Price, Open, High, Low, tomorrow)
+
+test_set_histor %>% ggplot(aes(Date, Price)) + geom_line() + ggtitle("BTC Price test set")
+
+head(train_set_histor)
+head(test_set_histor)
+
+train_glm <- train(tomorrow ~ ., method = "glm", data = train_set_histor)
+train_glm
+
+y_hat_glm <- predict(train_glm, test_set_histor, type = "raw")
+
+test_set_histor %>% mutate(y_hat_glm = y_hat_glm) %>% 
+  filter(Date >= "2020-11-01") %>% ggplot(aes(Date, Price)) + 
+  geom_line() + geom_line(aes(Date, y_hat_glm),col = "green") + ggtitle("BTC real price (black) and prediction (green)")
+```
+
+```{r, warning=FALSE, message=FALSE}
+rmse_glm <- RMSE(y_hat_glm, test_set_histor$Price)
+```
+
+We normalize the RMSE.
+
+That normalisation doesn't really produce a percentage (e.g. 1 doesn't mean anything in particular), and it isn't any more or less valid than any other form of normalisation. It depends on the distribution of that data. 
+
+```{r, warning=FALSE, message=FALSE}
+rmse_glm/(max(test_set_histor$Price)-min(test_set_histor$Price))
+```
+
+I go back to price minute by minute to set the bands
+
+```{r, warning=FALSE, message=FALSE}
+dset %>% group_by(Key) %>% filter(Key == top20$Key[1]) %>% ggplot(aes(Date, Price, col= Key)) + geom_line()
+```
+
+We take the trend of the last day and knowing where the price is going, we can choose to establish points for buy and sell in a couple of hours.
+
+We try again with other tecnics kNN
+
+### Knn method
+
+```{r, warning=FALSE, message=FALSE}
+train_knn <- train(tomorrow ~ ., method = "knn", data = train_set_histor)
+train_knn
+
+y_hat_knn <- predict(train_knn, test_set_histor, type = "raw")
+
+test_set_histor %>% mutate(y_hat_knn = y_hat_knn) %>% filter(Date >= "2020-11-01") %>% ggplot(aes(Date, Price)) + geom_line() + geom_line(aes(Date, y_hat_knn),col = "green") + ggtitle("BTC real price (black) and prediction (green) by method KNN")
+```
+
+```{r, warning=FALSE, message=FALSE}
+rmse_knn <- RMSE(y_hat_knn, test_set_histor$Price)
+rmse_knn %>% knitr::kable()
+```
+
+We normalize the RMSE.
+
+```{r, warning=FALSE, message=FALSE}
+rmse_knn/(max(test_set_histor$Price)-min(test_set_histor$Price))
+```
+
+### Random forest method
+
+```{r, warning=FALSE, message=FALSE}
+train_rf <- train(tomorrow ~ ., method = "rf", data = train_set_histor)
+train_rf
+
+y_hat_rf <- predict(train_rf, test_set_histor, type = "raw")
+
+test_set_histor %>% mutate(y_hat_rf = y_hat_rf) %>% filter(Date >= "2020-11-01") %>% ggplot(aes(Date, Price)) + geom_line() + geom_line(aes(Date, y_hat_rf),col = "green") + ggtitle("BTC real price (black) and prediction (green) by method RF")
+```
+
+```{r, warning=FALSE, message=FALSE}
+rmse_rf <- RMSE(y_hat_rf, test_set_histor$Price)
+rmse_rf %>% knitr::kable()
+```
+
+We normalize the RMSE.
+
+```{r, warning=FALSE, message=FALSE}
+rmse_rf/(max(test_set_histor$Price)-min(test_set_histor$Price))
+```
+
+# Results
+
+So, the method "glm" is the best to predict the close price for tomorow using like predictor the data from today. It is very good, knowing the close price of tomorrow, its permits us buy and sell in a period of time in the day, like we see in the daily dataset.
+
+```{r, warning=FALSE, message=FALSE}
+day09 <- test_set_histor %>% filter(Date == "2020-11-09")
+day09 %>% knitr::kable()
+
+dset %>% group_by(Key) %>% filter(Key == top20$Key[1]) %>% 
+  ggplot(aes(Date, Price, col= Key)) + geom_line() + 
+  geom_hline(aes(yintercept = day09$tomorrow), colour="#990000", linetype="dashed") + ggtitle("BTC real variation price in a day and the prediction of close price")
+```
+
+In the Graphic we can see the line with the prediction at the finish of the day, this prediction, we construct, exist before the minutes advance in the day, so, we can see when the price is high and low.
+
+Is posible to ensemble all in a real time function. 
+Is not posible realice in this code because we need to generate 
+The final and rmd document.
+
+# Conclusion
+
+We was looking the comportament of prices for three datasets, there are a lot of information for know more the dinamic of prices. Also needed made a photography in a specific moment for this analysis. I continued looking the prices days after of this capture, and not all the time the prediction is good, specially when the market is going up, there are a lot of players and is not easy predict a price, but it can be posible.
+Again, is posible ensemble all thogether in a function and also fit the model.
+Like a observation, at the moment i am finishing this work, the CSS selectors are changed in the webpage of Coinmarketcap.com, it are think is necesary be carrefull and control for errors in the web scraping, principally if we will make trade. 
+This work shows the powerfull of tecnics of Machine Learning for predict prices. I will continue developing and fitting. You can follow me in my GitHub account with the name [Avantas](https://github.com/Avantas), and also in [Twitter](@garciamazzaro).
+Finally, I would like to thank the entire team behind the platform that make learning possible.
 
 
 

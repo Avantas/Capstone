@@ -21,8 +21,7 @@ date <- now()
 class(coinmarket)
 
 # I identify the CCS selector for take the Name of coin, price, and volume
-market <- html_nodes(coinmarket, ".iTmTiC , .kqPMfR , td .hVAibX , .price___3rj7O .cmc-link , .coin-item-symbol")
-
+market <- html_nodes(coinmarket, ".iJjGCS , .hNpJqV , td .kDEzev , .price___3rj7O .cmc-link , .coin-item-symbol")
 length(market)
 
 #we have the first 100 coin
@@ -34,7 +33,7 @@ market_text <- market_text %>% str_replace_all("\\s[A-Z]*", "") # we take out th
 market_text
 
 market_data <- matrix(market_text, 100, 6, byrow = TRUE)
-market_data <- as.tibble(market_data)
+market_data <- as_tibble(market_data)
 
 #we add the column date
 market_data <- market_data %>% mutate(date = date)
@@ -85,7 +84,7 @@ datasetmakingfor <- function(m, s){
     market_text <- market_text %>% str_replace_all(",", "") # we take out the ","
     market_text <- market_text %>% str_replace_all("\\s[A-Z]*", "") # we take out the name of V6
     market_data <- matrix(market_text, 100, 6, byrow = TRUE)
-    market_data <- as.tibble(market_data)
+    market_data <- as_tibble(market_data)
     market_data <- market_data %>% mutate(date = date)
     market_data$V3 <- as.numeric(market_data$V3)
     market_data$V4 <- as.numeric(market_data$V4)       
@@ -95,14 +94,14 @@ datasetmakingfor <- function(m, s){
     if(i == 1){market_data1 <- market_data}
     else market_data1 <- full_join(market_data, market_data1)
     i+1
-    print(i/m)}
+    print((i/m)*100)}
   market_data1
 }
 
 
-finaldataset <- datasetmakingfor(4, 33) #1000 step, sleep for 33 seconds
+finaldataset6 <- datasetmakingfor(1140, 60) #1000 step, sleep for 33 seconds
 nrow(finaldataset)
-finaldataset
+finaldataset5
 
 ###############################################analyse the data
 
@@ -158,3 +157,25 @@ finaldataset %>% mutate(sd = sd(Vol24hs/Price)) %>%
 
 #we observe al line, like a new coin that we have data for a short peroid of time, we investigate whats is it
 finaldataset %>% group_by(Key, Vol24hs) %>% summarize(Price = mean(Price)) %>% arrange(desc(Vol24hs))
+
+
+lifecycle::last_warnings()
+
+dset <- full_join(finaldataset, finaldataset1)
+dset <- full_join(dset, finaldataset2)
+dset <- full_join(dset, finaldataset3)
+dset <- full_join(dset, finaldataset4)
+dset <- full_join(dset, finaldataset5)
+
+dset
+
+write.csv(dset, "dset.csv")
+write.csv(finaldataset, "finaldataset.csv")
+write.csv(finaldataset1, "finaldataset1.csv")
+write.csv(finaldataset2, "finaldataset2.csv")
+write.csv(finaldataset3, "finaldataset3.csv")
+write.csv(finaldataset4, "finaldataset4.csv")
+write.csv(finaldataset5, "finaldataset5.csv")
+
+
+
